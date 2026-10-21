@@ -4,6 +4,7 @@ import BallToken from '../components/BallToken.vue'
 import BallTray from '../components/BallTray.vue'
 import BilliardTable from '../components/BilliardTable.vue'
 import ShotPath from '../components/ShotPath.vue'
+import ShotPlayer from '../components/ShotPlayer.vue'
 import { useBallDrag, type TableHandle } from '../composables/useBallDrag'
 import { useOrientation } from '../composables/useOrientation'
 import { useSituationEditor } from '../composables/useSituationEditor'
@@ -21,6 +22,7 @@ const triedToContinue = ref(false)
 const isBeforeStep = computed(() => editor.state.step === 'before')
 const isShotStep = computed(() => editor.state.step === 'shot')
 const showAfter = computed(() => isShotStep.value && editor.state.view === 'after')
+const showPlayer = computed(() => isShotStep.value && editor.state.view === 'play')
 
 /** Balls drawn on the table: the before-state, or the derived after-state. */
 const shownBalls = computed<readonly Ball[]>(() => (showAfter.value ? editor.after.value : editor.state.balls))
@@ -76,6 +78,7 @@ const movementBall = (m: Movement) => editor.state.balls.find((b) => b.id === m.
 const hint = computed(() => {
   if (!isShotStep.value) return ''
   if (showAfter.value) return 'Dit is de situatie na de stoot.'
+  if (showPlayer.value) return 'Speel de stoot af. Stap per stap speelt één beweging.'
   if (!editor.state.playedBallId) return 'Tik op de bal die je speelt.'
   const cur = editor.state.currentBallId
   const m = editor.currentMovement.value
@@ -124,11 +127,21 @@ function onSave() {
             >
               Na
             </button>
+            <button
+              type="button"
+              class="rounded px-3 py-1 text-sm disabled:opacity-40"
+              :class="editor.state.view === 'play' ? 'bg-emerald-700 text-white' : 'text-gray-700'"
+              :disabled="!editor.canSave.value"
+              @click="editor.form.view = 'play'"
+            >
+              Afspelen
+            </button>
           </div>
         </div>
 
         <div class="editor-table mx-auto" :class="orientation === 'portrait' ? 'max-w-md' : ''">
-          <BilliardTable ref="table" :orientation="orientation" @click="onTableClick">
+          <ShotPlayer v-if="showPlayer" :before="editor.state.balls" :shot="editor.shot.value" :orientation="orientation" />
+          <BilliardTable v-else ref="table" :orientation="orientation" @click="onTableClick">
             <!-- Paths (before view of the shot step) -->
             <template v-if="isShotStep && !showAfter">
               <ShotPath

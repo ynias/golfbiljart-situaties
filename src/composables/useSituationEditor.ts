@@ -26,7 +26,7 @@ import {
 } from '../domain/types'
 
 export type EditorStep = 'before' | 'shot'
-export type EditorView = 'before' | 'after'
+export type EditorView = 'before' | 'after' | 'play'
 
 export interface EditorState {
   title: string
