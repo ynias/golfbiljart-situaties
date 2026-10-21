@@ -94,11 +94,22 @@ export function useSituationEditor(initial?: Partial<EditorState>) {
     const next = moveBallRule(state.balls, id, position)
     if (!next) return false
     state.balls = next
+    // Keep an existing movement anchored to the ball's new start position.
+    state.movements = state.movements.map((m) =>
+      m.ballId === id ? { ...m, path: [{ ...position }, ...m.path.slice(1)] } : m,
+    )
     return true
   }
 
   function removeBall(id: string): void {
     state.balls = removeBallRule(state.balls, id)
+    // Removal renumbers the remaining balls of that colour, so movement ids may no longer
+    // match the right ball: clear the shot and let the user redraw it.
+    if (state.movements.length > 0) {
+      state.movements = []
+      state.playedBallId = null
+      state.currentBallId = null
+    }
   }
 
   // ---- shot ------------------------------------------------------------------------------

@@ -127,3 +127,22 @@ describe('useSituationEditor – shot', () => {
     expect(editor.state.step).toBe('before')
   })
 })
+
+describe('useSituationEditor – editing balls after a shot exists', () => {
+  it('moving a ball re-anchors its movement; removing a ball clears the shot', () => {
+    const editor = useSituationEditor()
+    editor.form.title = 'TEST_edit'
+    editor.addBall('white', { x: 300, y: 1200 })
+    editor.addBall('red', { x: 450, y: 400 })
+    editor.goToShot()
+    editor.selectPlayedBall('W1')
+    editor.addPathPoint({ x: 450, y: 900 })
+    editor.backToBefore()
+    editor.moveBall('W1', { x: 320, y: 1100 })
+    expect(editor.state.movements[0]!.path[0]).toEqual({ x: 320, y: 1100 })
+    expect(editor.canSave.value).toBe(true)
+    editor.removeBall('R1')
+    expect(editor.state.movements).toEqual([])
+    expect(editor.state.playedBallId).toBeNull()
+  })
+})
