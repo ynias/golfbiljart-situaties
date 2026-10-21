@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
   TABLE,
   FRAME,
+  fromSvg,
   holes,
   lines,
   orientationTransform,
   pins,
   viewBox,
   type Orientation,
+  type Point,
 } from '../table/geometry'
 import { DEFAULT_THEME, themes, type ThemeName } from '../table/themes'
 
@@ -19,6 +21,29 @@ const props = withDefaults(
   }>(),
   { orientation: 'portrait', theme: DEFAULT_THEME },
 )
+
+const svg = ref<SVGSVGElement | null>(null)
+
+/**
+ * Maps a client (screen) point to canonical table coordinates in mm.
+ * Returns null when the SVG is not mounted.
+ */
+function clientToTable(clientX: number, clientY: number): Point | null {
+  const el = svg.value
+  if (!el) return null
+  const ctm = el.getScreenCTM()
+  if (!ctm) return null
+  const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse())
+  return fromSvg({ x: p.x, y: p.y }, props.orientation)
+}
+
+/** Current scale: screen pixels per mm. */
+function pixelsPerMm(): number {
+  const ctm = svg.value?.getScreenCTM()
+  return ctm ? Math.hypot(ctm.a, ctm.b) : 1
+}
+
+defineExpose({ svg, clientToTable, pixelsPerMm })
 
 const colors = computed(() => themes[props.theme])
 const box = computed(() => viewBox(props.orientation))
@@ -32,6 +57,7 @@ const pointsAttr = (pts: { x: number; y: number }[]) => pts.map((p) => `${p.x},$
 
 <template>
   <svg
+    ref="svg"
     class="billiard-table block h-auto w-full"
     :viewBox="viewBoxAttr"
     xmlns="http://www.w3.org/2000/svg"
