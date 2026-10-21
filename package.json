@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "supabase": "supabase"
+    "supabase": "supabase",
+    "render:table": "node scripts/render-table.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -20,9 +21,12 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^24.19.2",
+    "@types/pngjs": "^6.0.5",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/tsconfig": "^0.9.1",
+    "pngjs": "^7.0.0",
     "supabase": "^2.121.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",

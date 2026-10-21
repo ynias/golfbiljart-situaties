@@ -46,7 +46,7 @@ scripts/        render-table.ts
 ## Phase status
 
 - [x] Phase 0 — Setup (folder, Git, GitHub, Netlify, Supabase)
-- [ ] Phase 1 — The table (geometry.ts, BilliardTable.vue, render check, `/tafel`)
+- [x] Phase 1 — The table (geometry.ts, BilliardTable.vue, render check, `/tafel`)
 - [ ] Phase 2 — Editor: before-state (`/nieuw`)
 - [ ] Phase 3 — Editor: shot and after-state
 - [ ] Phase 4 — Playback (ShotPlayer.vue)
