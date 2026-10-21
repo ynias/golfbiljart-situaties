@@ -3,7 +3,7 @@
  * Pure functions, no UI.
  */
 import { BALL_RADIUS, collidesWithPin, distance, isInsideTable } from '../table/geometry'
-import { MAX_BALLS_PER_COLOR, type Ball, type BallColor, type BallNumber, type Point } from './types'
+import { MAX_BALLS_PER_COLOR, type Ball, type BallColor, type BallNumber, type Movement, type Point, type Shot } from './types'
 
 export const colorPrefix: Record<BallColor, string> = { white: 'W', red: 'R' }
 
@@ -82,5 +82,95 @@ export function validateBefore(balls: readonly Ball[]): string[] {
       if (n !== i + 1) problems.push(`${color} numbering is not sequential`)
     })
   }
+  return problems
+}
+
+// ---------------------------------------------------------------------------------------
+// Shot and after-state
+// ---------------------------------------------------------------------------------------
+
+/** Next movement order: 1 when there are no movements yet. */
+export function nextMovementOrder(movements: readonly Movement[]): number {
+  return movements.length + 1
+}
+
+/** Movements sorted by order. */
+export function sortedMovements(movements: readonly Movement[]): Movement[] {
+  return [...movements].sort((a, b) => a.order - b.order)
+}
+
+/** Renumbers orders 1..n in the current sorted order. */
+export function normalizeOrders(movements: readonly Movement[]): Movement[] {
+  return sortedMovements(movements).map((m, i) => ({ ...m, order: i + 1 }))
+}
+
+/**
+ * Moves the movement of `ballId` one step up or down in the order. The played ball (order 1)
+ * always stays first. Returns the new list (unchanged when the move is not possible).
+ */
+export function reorderMovement(movements: readonly Movement[], ballId: string, direction: 'up' | 'down'): Movement[] {
+  const list = normalizeOrders(movements)
+  const i = list.findIndex((m) => m.ballId === ballId)
+  if (i < 0) return list
+  const j = direction === 'up' ? i - 1 : i + 1
+  // index 0 is the played ball: it never moves and nothing moves above it
+  if (i === 0 || j <= 0 || j >= list.length) return list
+  const a = list[i]!
+  const b = list[j]!
+  list[i] = { ...b, order: i + 1 }
+  list[j] = { ...a, order: j + 1 }
+  return list
+}
+
+/**
+ * After-state: every moved ball ends at the last point of its path, scored balls disappear,
+ * untouched balls stay where they were.
+ */
+export function computeAfter(before: readonly Ball[], shot: Shot): Ball[] {
+  const byBall = new Map(shot.movements.map((m) => [m.ballId, m]))
+  const after: Ball[] = []
+  for (const ball of before) {
+    const m = byBall.get(ball.id)
+    if (!m) {
+      after.push({ ...ball, position: { ...ball.position } })
+      continue
+    }
+    if (m.result === 'scored') continue
+    const end = m.path[m.path.length - 1] ?? ball.position
+    after.push({ ...ball, position: { ...end } })
+  }
+  return after
+}
+
+/** Validates a shot against its before-state. Returns a list of problems (empty = valid). */
+export function validateShot(before: readonly Ball[], shot: Shot): string[] {
+  const problems: string[] = []
+  const balls = new Map(before.map((b) => [b.id, b]))
+  if (!balls.has(shot.playedBallId)) problems.push(`played ball ${shot.playedBallId} does not exist`)
+  const sorted = sortedMovements(shot.movements)
+  if (sorted.length === 0) problems.push('no movements')
+  sorted.forEach((m, i) => {
+    if (m.order !== i + 1) problems.push(`orders are not sequential from 1 (got ${m.order} at ${i + 1})`)
+    const ball = balls.get(m.ballId)
+    if (!ball) {
+      problems.push(`movement for unknown ball ${m.ballId}`)
+      return
+    }
+    if (m.path.length < 2) problems.push(`movement of ${m.ballId} has no end point`)
+    const start = m.path[0]
+    if (!start || Math.abs(start.x - ball.position.x) > 1e-6 || Math.abs(start.y - ball.position.y) > 1e-6) {
+      problems.push(`movement of ${m.ballId} does not start at the ball position`)
+    }
+    for (const p of m.path) {
+      if (!isInsideTable(p, BALL_RADIUS) && !(m.result === 'scored' && p === m.path[m.path.length - 1])) {
+        problems.push(`movement of ${m.ballId} leaves the table`)
+        break
+      }
+    }
+  })
+  const first = sorted[0]
+  if (first && first.ballId !== shot.playedBallId) problems.push('order 1 must belong to the played ball')
+  const ids = sorted.map((m) => m.ballId)
+  if (new Set(ids).size !== ids.length) problems.push('a ball has more than one movement')
   return problems
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BALL_RADIUS, TABLE, pins } from '../table/geometry'
-import { addBall, isValidBallPosition, moveBall, nextBallNumber, removeBall, validateBefore } from './situation'
+import { addBall, computeAfter, isValidBallPosition, moveBall, nextBallNumber, removeBall, reorderMovement, validateBefore, validateShot } from './situation'
 import type { Ball } from './types'
 
 const W = TABLE.width
@@ -96,5 +96,60 @@ describe('validateBefore', () => {
     expect(problems.some((m) => m.includes('invalid position'))).toBe(true)
     expect(problems.some((m) => m.includes('does not match'))).toBe(true)
     expect(problems.some((m) => m.includes('not sequential'))).toBe(true)
+  })
+})
+
+describe('shot', () => {
+  const before: Ball[] = [
+    { id: 'W1', color: 'white', number: 1, position: p(300, 1200) },
+    { id: 'R1', color: 'red', number: 1, position: p(450, 400) },
+    { id: 'R2', color: 'red', number: 2, position: p(700, 900) },
+  ]
+  const shot = {
+    playedBallId: 'W1',
+    movements: [
+      { order: 1, ballId: 'W1', path: [p(300, 1200), p(BALL_RADIUS, 800), p(420, 450)], result: 'rest' as const },
+      { order: 2, ballId: 'R1', path: [p(450, 400), p(450, 33)], result: 'scored' as const },
+    ],
+  }
+
+  it('computeAfter: moved ball at end point, scored ball gone, untouched ball unchanged', () => {
+    const after = computeAfter(before, shot)
+    expect(after.map((b) => b.id)).toEqual(['W1', 'R2'])
+    expect(after[0]!.position).toEqual(p(420, 450))
+    expect(after[1]!.position).toEqual(p(700, 900))
+    // input is not mutated
+    expect(before[0]!.position).toEqual(p(300, 1200))
+  })
+
+  it('validateShot accepts the example', () => {
+    expect(validateShot(before, shot)).toEqual([])
+  })
+
+  it('validateShot reports wrong start, order and played ball', () => {
+    const bad = {
+      playedBallId: 'R1',
+      movements: [
+        { order: 1, ballId: 'W1', path: [p(1, 1), p(100, 100)], result: 'rest' as const },
+        { order: 3, ballId: 'R1', path: [p(450, 400)], result: 'rest' as const },
+      ],
+    }
+    const problems = validateShot(before, bad)
+    expect(problems.some((m) => m.includes('does not start'))).toBe(true)
+    expect(problems.some((m) => m.includes('not sequential'))).toBe(true)
+    expect(problems.some((m) => m.includes('order 1 must belong'))).toBe(true)
+    expect(problems.some((m) => m.includes('no end point'))).toBe(true)
+  })
+
+  it('reorderMovement swaps neighbours but keeps the played ball first', () => {
+    const ms = [
+      { order: 1, ballId: 'W1', path: [], result: 'rest' as const },
+      { order: 2, ballId: 'R1', path: [], result: 'rest' as const },
+      { order: 3, ballId: 'R2', path: [], result: 'rest' as const },
+    ]
+    expect(reorderMovement(ms, 'R2', 'up').map((m) => m.ballId)).toEqual(['W1', 'R2', 'R1'])
+    expect(reorderMovement(ms, 'R1', 'up').map((m) => m.ballId)).toEqual(['W1', 'R1', 'R2'])
+    expect(reorderMovement(ms, 'W1', 'down').map((m) => m.ballId)).toEqual(['W1', 'R1', 'R2'])
+    expect(reorderMovement(ms, 'R2', 'down').map((m) => m.order)).toEqual([1, 2, 3])
   })
 })

@@ -10,7 +10,7 @@ const props = withDefaults(
     position: Point
     orientation?: Orientation
     /** Visual state while dragging / after an invalid drop. */
-    state?: 'idle' | 'dragging' | 'invalid' | 'selected'
+    state?: 'idle' | 'dragging' | 'invalid' | 'selected' | 'active'
     interactive?: boolean
   }>(),
   { orientation: 'portrait', state: 'idle', interactive: false },
@@ -21,6 +21,7 @@ const textColor = computed(() => (props.color === 'white' ? '#222' : '#fff'))
 const stroke = computed(() => {
   if (props.state === 'invalid') return '#ff2a2a'
   if (props.state === 'selected') return '#ffd400'
+  if (props.state === 'active') return '#4cc9ff'
   return props.color === 'white' ? '#8a8578' : '#7a0d0d'
 })
 </script>
