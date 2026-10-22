@@ -100,7 +100,14 @@ export interface Hole {
   id: 'top' | 'bottom'
   center: Point
   radius: number
+  /** Ball colour that has to be scored in this goal, shown as a rim around the hole. */
+  scoreColor: 'red' | 'white'
+  /** Width of the coloured rim, drawn outside the hole (visual marker only, not a norm). */
+  rimWidth: number
 }
+
+/** Width of the coloured rim around each hole, in mm. */
+export const HOLE_RIM_WIDTH = 10
 
 const pin = (id: string, kind: PinKind, center: Point): Pin => ({ id, kind, center, radius: PIN_RADIUS })
 
@@ -119,9 +126,17 @@ export const pins: readonly Pin[] = [
   pin('centre-outer-right', 'centre-outer', { x: CX + MARKS.centrePinOuter, y: CY }),
 ]
 
+// The top goal becomes the left goal in landscape: red balls are scored there, white balls
+// in the bottom (right) goal.
 export const holes: readonly Hole[] = [
-  { id: 'top', center: { x: CX, y: MARKS.holeCenterY }, radius: HOLE_RADIUS },
-  { id: 'bottom', center: mirrorY({ x: CX, y: MARKS.holeCenterY }), radius: HOLE_RADIUS },
+  { id: 'top', center: { x: CX, y: MARKS.holeCenterY }, radius: HOLE_RADIUS, scoreColor: 'red', rimWidth: HOLE_RIM_WIDTH },
+  {
+    id: 'bottom',
+    center: mirrorY({ x: CX, y: MARKS.holeCenterY }),
+    radius: HOLE_RADIUS,
+    scoreColor: 'white',
+    rimWidth: HOLE_RIM_WIDTH,
+  },
 ]
 
 // ---------------------------------------------------------------------------------------

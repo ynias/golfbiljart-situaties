@@ -17,7 +17,7 @@ Web app to draw, save and share golf billiards (golfbiljart) situations: a befor
 src/
   table/        geometry.ts (table in mm, origin top-left of playing surface, portrait canonical), themes.ts
   domain/       types.ts, situation.ts (+ tests), paths.ts (+ tests)
-  components/   BilliardTable.vue, BallToken.vue, ShotPath.vue, ShotPlayer.vue, BallTray.vue
+  components/   BilliardTable.vue, BallToken.vue, ShotPath.vue, ShotPlayer.vue, BallTray.vue, AppHeader.vue, GoalLegend.vue
   composables/  useSituationEditor.ts, useEditTokens.ts
   pages/        HomePage.vue, NewSituationPage.vue, SituationPage.vue, EditSituationPage.vue, MinePage.vue, TablePreviewPage.vue
   lib/          supabase.ts, share.ts, slug.ts

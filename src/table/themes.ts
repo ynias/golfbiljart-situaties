@@ -10,6 +10,9 @@ export interface TableTheme {
   pin: string
   pinRing: string
   hole: string
+  /** Rims around the goals: the colour of the balls scored there. */
+  rimRed: string
+  rimWhite: string
 }
 
 export const themes: Record<ThemeName, TableTheme> = {
@@ -22,6 +25,8 @@ export const themes: Record<ThemeName, TableTheme> = {
     pin: '#c8c8c8',
     pinRing: '#e01b1b',
     hole: '#0a0a0a',
+    rimRed: '#d41e1e',
+    rimWhite: '#f8f6f0',
   },
   /** docs/reference/tafel-1.png: bright green cloth, dark green cushion, maroon rail. */
   green: {
@@ -32,6 +37,8 @@ export const themes: Record<ThemeName, TableTheme> = {
     pin: '#9a9a9a',
     pinRing: '#e01b1b',
     hole: '#0a0a0a',
+    rimRed: '#d41e1e',
+    rimWhite: '#f8f6f0',
   },
 }
 

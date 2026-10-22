@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BALL_RADIUS, TABLE, pins } from '../table/geometry'
-import { addBall, computeAfter, isValidBallPosition, moveBall, nextBallNumber, removeBall, reorderMovement, validateBefore, validateShot } from './situation'
+import { addBall, computeAfter, isValidBallPosition, moveBall, nextBallNumber, removeBall, reorderMovement, summarize, validateBefore, validateShot } from './situation'
 import type { Ball } from './types'
 
 const W = TABLE.width
@@ -151,5 +151,23 @@ describe('shot', () => {
     expect(reorderMovement(ms, 'R1', 'up').map((m) => m.ballId)).toEqual(['W1', 'R1', 'R2'])
     expect(reorderMovement(ms, 'W1', 'down').map((m) => m.ballId)).toEqual(['W1', 'R1', 'R2'])
     expect(reorderMovement(ms, 'R2', 'down').map((m) => m.order)).toEqual([1, 2, 3])
+  })
+})
+
+describe('summarize', () => {
+  it('counts balls per colour, movements and scored balls', () => {
+    const before = place(['white', 'white', 'red'])
+    const shot = {
+      playedBallId: 'W1',
+      movements: [
+        { order: 1, ballId: 'W1', path: [before[0]!.position, p(450, 900)], result: 'rest' as const },
+        { order: 2, ballId: 'R1', path: [before[2]!.position, p(450, 33)], result: 'scored' as const },
+      ],
+    }
+    expect(summarize(before, shot)).toEqual({ white: 2, red: 1, movements: 2, scored: 1 })
+  })
+
+  it('handles an empty situation', () => {
+    expect(summarize([], { playedBallId: '', movements: [] })).toEqual({ white: 0, red: 0, movements: 0, scored: 0 })
   })
 })

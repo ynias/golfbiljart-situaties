@@ -23,21 +23,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="mx-auto max-w-5xl p-4">
-    <header class="mb-4 flex flex-wrap items-center gap-3">
-      <h1 class="text-xl font-semibold">Mijn situaties</h1>
-      <nav class="ml-auto flex items-center gap-3 text-sm">
-        <RouterLink to="/" class="text-emerald-800 underline">Alle situaties</RouterLink>
-        <RouterLink to="/nieuw" class="rounded bg-emerald-700 px-3 py-2 font-medium text-white hover:bg-emerald-800">
-          Nieuwe situatie
-        </RouterLink>
-      </nav>
-    </header>
-    <p class="mb-4 text-sm text-gray-600">Situaties die je op dit toestel gemaakt hebt. Enkel hier kan je ze bewerken of verwijderen.</p>
+  <main class="mx-auto max-w-6xl px-4 pt-6 pb-12">
+    <h1 class="font-display text-4xl leading-none font-bold tracking-wide uppercase">Mijn situaties</h1>
+    <p class="mt-1.5 mb-6 text-muted">Situaties die je op dit toestel gemaakt hebt. Enkel hier kan je ze bewerken of verwijderen.</p>
 
-    <p v-if="loading" class="text-gray-600">Laden…</p>
+    <p v-if="loading" class="text-muted">Laden…</p>
     <p v-else-if="error" class="text-red-700">De situaties konden niet geladen worden.</p>
-    <p v-else-if="situations.length === 0" class="text-gray-600">Nog geen situaties op dit toestel.</p>
+    <div v-else-if="situations.length === 0" class="rounded-lg border border-dashed border-line bg-white p-8 text-center">
+      <p class="font-semibold">Nog geen situaties op dit toestel.</p>
+      <RouterLink to="/nieuw" class="mt-4 inline-block rounded-md bg-felt px-4 py-2 font-semibold text-white hover:bg-felt-dark">
+        Nieuwe situatie
+      </RouterLink>
+    </div>
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <SituationCard v-for="s in situations" :key="s.slug" :situation="s" />
     </div>

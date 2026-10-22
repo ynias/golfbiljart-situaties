@@ -1,10 +1,45 @@
 @import "tailwindcss";
 
+/* Design tokens, taken from the table itself: cloth, rail, ball colours and blue chalk. */
+@theme {
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-felt: #0f615b;
+  --color-felt-dark: #0b4642;
+  --color-felt-tint: #e2eeec;
+  --color-cushion: #1a8078;
+  --color-rail: #241d19;
+  --color-chalk: #1f6fbf;
+  --color-chalk-tint: #e6f0fa;
+  --color-ball-red: #d41e1e;
+  --color-ball-white: #f8f6f0;
+  --color-paper: #eef1ef;
+  --color-line: #d3dbd8;
+  --color-muted: #5b6561;
+}
+
 html {
   color-scheme: light;
 }
 
 body {
-  background-color: #fafaf7;
-  color: #1a1a1a;
+  background-color: var(--color-paper);
+  color: var(--color-rail);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-chalk);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
