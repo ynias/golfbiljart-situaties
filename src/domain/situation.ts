@@ -174,3 +174,20 @@ export function validateShot(before: readonly Ball[], shot: Shot): string[] {
   if (new Set(ids).size !== ids.length) problems.push('a ball has more than one movement')
   return problems
 }
+
+export interface SituationSummary {
+  white: number
+  red: number
+  movements: number
+  scored: number
+}
+
+/** Short summary for lists: balls per colour, number of movements and scored balls. */
+export function summarize(before: readonly Ball[], shot: Shot): SituationSummary {
+  return {
+    white: ballsOfColor(before, 'white').length,
+    red: ballsOfColor(before, 'red').length,
+    movements: shot.movements.length,
+    scored: shot.movements.filter((m) => m.result === 'scored').length,
+  }
+}

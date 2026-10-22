@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import BallToken from '../components/BallToken.vue'
 import BallTray from '../components/BallTray.vue'
 import BilliardTable from '../components/BilliardTable.vue'
+import GoalLegend from '../components/GoalLegend.vue'
 import ShotPath from '../components/ShotPath.vue'
 import ShotPlayer from '../components/ShotPlayer.vue'
 import { useBallDrag, type TableHandle } from '../composables/useBallDrag'
@@ -74,7 +75,8 @@ const ghost = computed(() => {
 
 function onContinue() {
   triedToContinue.value = true
-  editor.goToShot()
+  // On phones the title field sits below the table: bring it into view when it is missing.
+  if (!editor.goToShot() && editor.fieldErrors.value.title) document.getElementById('title')?.focus()
 }
 
 // ---- shot step -----------------------------------------------------------------------
@@ -98,8 +100,17 @@ function onTableClick(event: MouseEvent) {
   if (point) editor.addPathPoint(point)
 }
 
-const ballLabel = (id: string) => id
 const movementBall = (m: Movement) => editor.state.balls.find((b) => b.id === m.ballId)
+const ballName = (m: Movement) => {
+  const ball = movementBall(m)
+  return ball ? `${ball.color === 'white' ? 'Wit' : 'Rood'} ${ball.number}` : m.ballId
+}
+
+const views = [
+  { id: 'before', label: 'Voor' },
+  { id: 'after', label: 'Na' },
+  { id: 'play', label: 'Afspelen' },
+] as const
 
 const hint = computed(() => {
   if (!isShotStep.value) return ''
@@ -109,10 +120,10 @@ const hint = computed(() => {
   const cur = editor.state.currentBallId
   const m = editor.currentMovement.value
   if (cur && m) {
-    if (m.result === 'scored') return `${cur} is gescoord. Tik op een andere bal die beweegt, of bewaar.`
+    if (m.result === 'scored') return `${ballName(m)} is gescoord. Tik op een andere bal die beweegt, of bewaar.`
     return m.path.length < 2
-      ? `Tik op de tafel waar ${cur} naartoe gaat. Dicht bij de band klikt het punt vast op de band; in het gat betekent gescoord.`
-      : `Tik verder voor extra knikpunten van ${cur}, of tik op een andere bal die beweegt.`
+      ? `Tik op de tafel waar ${ballName(m)} naartoe gaat. Dicht bij de band klikt het punt vast op de band; in het gat betekent gescoord.`
+      : `Tik verder voor extra knikpunten van ${ballName(m)}, of tik op een andere bal die beweegt.`
   }
   return 'Tik op een bal die beweegt, of bewaar.'
 })
@@ -137,46 +148,84 @@ function onSave() {
 </script>
 
 <template>
-  <main class="mx-auto max-w-6xl p-4">
-    <h1 class="mb-3 text-xl font-semibold">
-      {{ initial ? 'Situatie bewerken' : 'Nieuwe situatie' }}
-      <span class="ml-2 text-sm font-normal text-gray-500">{{ isBeforeStep ? 'Stap 1: de ballen' : 'Stap 2: de stoot' }}</span>
-    </h1>
+  <main class="mx-auto max-w-6xl px-4 pt-5 pb-28 md:pb-12">
+    <!-- Page head: title and the two steps -->
+    <div class="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+      <div class="min-w-0">
+        <RouterLink to="/" class="text-sm font-semibold text-felt hover:underline">← Alle situaties</RouterLink>
+        <h1 class="mt-1 font-display text-3xl leading-none font-bold tracking-wide uppercase sm:text-4xl">
+          {{ initial ? 'Situatie bewerken' : 'Nieuwe situatie' }}
+        </h1>
+      </div>
+      <ol class="flex items-center gap-2 text-sm sm:ml-auto" aria-label="Stappen">
+        <li>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full py-1 pr-3 pl-1 font-semibold transition-colors"
+            :class="isBeforeStep ? 'bg-felt text-white' : 'text-felt hover:bg-felt-tint'"
+            :aria-current="isBeforeStep ? 'step' : undefined"
+            :disabled="isBeforeStep"
+            @click="editor.backToBefore()"
+          >
+            <span
+              class="grid h-6 w-6 place-items-center rounded-full text-xs"
+              :class="isBeforeStep ? 'bg-white text-felt' : 'bg-felt text-white'"
+              aria-hidden="true"
+              >{{ isBeforeStep ? '1' : '✓' }}</span
+            >
+            Ballen plaatsen
+          </button>
+        </li>
+        <li class="h-px w-6 bg-line" aria-hidden="true" />
+        <li>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full py-1 pr-3 pl-1 font-semibold transition-colors"
+            :class="isShotStep ? 'bg-felt text-white' : 'text-muted hover:bg-felt-tint hover:text-felt'"
+            :aria-current="isShotStep ? 'step' : undefined"
+            :disabled="isShotStep"
+            @click="onContinue"
+          >
+            <span
+              class="grid h-6 w-6 place-items-center rounded-full text-xs"
+              :class="isShotStep ? 'bg-white text-felt' : 'border border-current'"
+              aria-hidden="true"
+              >2</span
+            >
+            Stoot tekenen
+          </button>
+        </li>
+      </ol>
+    </div>
 
-    <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="grid gap-5 md:grid-cols-[minmax(0,1fr)_320px]">
       <section class="min-w-0">
+        <!-- Step 1: ball tray -->
         <div v-if="isBeforeStep" ref="tray" class="mb-3">
           <BallTray :remaining="editor.remaining.value" :drop-target="drag.overTray" @dragstart="startFromTray" />
         </div>
 
-        <div v-else class="mb-3 flex flex-wrap items-center gap-2">
-          <div class="inline-flex rounded border border-gray-300 bg-gray-50 p-0.5" role="radiogroup" aria-label="Voor of na">
+        <!-- Step 2: view switch and what to do next -->
+        <div v-else class="mb-3 space-y-2">
+          <div class="inline-flex rounded-md border border-line bg-white p-0.5 shadow-sm" role="radiogroup" aria-label="Voor of na">
             <button
+              v-for="v in views"
+              :key="v.id"
               type="button"
-              class="rounded px-3 py-1 text-sm"
-              :class="editor.state.view === 'before' ? 'bg-emerald-700 text-white' : 'text-gray-700'"
-              @click="editor.form.view = 'before'"
+              role="radio"
+              :aria-checked="editor.state.view === v.id"
+              class="rounded px-4 py-1.5 text-sm font-semibold transition-colors disabled:opacity-40"
+              :class="editor.state.view === v.id ? 'bg-felt text-white' : 'text-muted hover:text-felt'"
+              :disabled="v.id === 'play' && !editor.canSave.value"
+              @click="editor.form.view = v.id"
             >
-              Voor
-            </button>
-            <button
-              type="button"
-              class="rounded px-3 py-1 text-sm"
-              :class="editor.state.view === 'after' ? 'bg-emerald-700 text-white' : 'text-gray-700'"
-              @click="editor.form.view = 'after'"
-            >
-              Na
-            </button>
-            <button
-              type="button"
-              class="rounded px-3 py-1 text-sm disabled:opacity-40"
-              :class="editor.state.view === 'play' ? 'bg-emerald-700 text-white' : 'text-gray-700'"
-              :disabled="!editor.canSave.value"
-              @click="editor.form.view = 'play'"
-            >
-              Afspelen
+              {{ v.label }}
             </button>
           </div>
+          <p class="flex min-h-11 items-start gap-2 rounded-md border border-chalk/30 bg-chalk-tint px-3 py-2 text-sm text-rail" aria-live="polite">
+            <span class="mt-0.5 h-3 w-3 shrink-0 rounded-full bg-chalk" aria-hidden="true" />
+            {{ hint }}
+          </p>
         </div>
 
         <div class="editor-table mx-auto" :class="orientation === 'portrait' ? 'max-w-md' : ''">
@@ -218,24 +267,27 @@ function onSave() {
               :state="drag.valid ? 'dragging' : 'invalid'"
             />
           </BilliardTable>
+          <GoalLegend :orientation="orientation" class="mt-2" />
         </div>
-        <p v-if="isShotStep" class="mt-2 min-h-10 text-sm text-gray-700">{{ hint }}</p>
-        <p v-if="isBeforeStep && triedToContinue && editor.fieldErrors.value.balls" class="mt-2 text-sm text-red-700">
+        <p v-if="isBeforeStep && triedToContinue && editor.fieldErrors.value.balls" class="mt-2 text-sm font-semibold text-red-700">
           {{ editor.fieldErrors.value.balls }}
         </p>
       </section>
 
-      <!-- Step 1: fields -->
-      <aside v-if="isBeforeStep" class="space-y-4">
+      <!-- Step 1: details -->
+      <aside v-if="isBeforeStep" class="space-y-4 rounded-lg border border-line bg-white p-4 shadow-sm md:self-start">
+        <h2 class="font-display text-lg font-bold tracking-wide uppercase">Over deze situatie</h2>
         <div>
-          <label for="title" class="block text-sm font-medium">Titel</label>
+          <label for="title" class="block text-sm font-semibold">Titel</label>
           <input
             id="title"
             v-model="editor.form.title"
             type="text"
             maxlength="120"
             required
-            class="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            class="mt-1 w-full rounded-md border px-3 py-2 focus:border-chalk focus:outline-none"
+            :class="triedToContinue && editor.fieldErrors.value.title ? 'border-red-500' : 'border-line'"
+            :aria-invalid="triedToContinue && !!editor.fieldErrors.value.title"
             placeholder="bv. Via de band in het gat"
           />
           <p v-if="triedToContinue && editor.fieldErrors.value.title" class="mt-1 text-sm text-red-700">
@@ -243,69 +295,113 @@ function onSave() {
           </p>
         </div>
         <div>
-          <label for="description" class="block text-sm font-medium">Beschrijving <span class="text-gray-500">(optioneel)</span></label>
+          <label for="description" class="block text-sm font-semibold">Beschrijving <span class="font-normal text-muted">(optioneel)</span></label>
           <textarea
             id="description"
             v-model="editor.form.description"
             rows="4"
             :maxlength="MAX_DESCRIPTION_LENGTH"
-            class="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            class="mt-1 w-full rounded-md border border-line px-3 py-2 focus:border-chalk focus:outline-none"
+            placeholder="Wat is de bedoeling van de stoot?"
           />
-          <p class="mt-1 text-right text-xs text-gray-500">{{ editor.form.description.length }}/{{ MAX_DESCRIPTION_LENGTH }}</p>
+          <p class="mt-1 text-right text-xs text-muted">{{ editor.form.description.length }}/{{ MAX_DESCRIPTION_LENGTH }}</p>
         </div>
         <div>
-          <label for="author" class="block text-sm font-medium">Je naam <span class="text-gray-500">(optioneel)</span></label>
+          <label for="author" class="block text-sm font-semibold">Je naam <span class="font-normal text-muted">(optioneel)</span></label>
           <input
             id="author"
             v-model="editor.form.authorName"
             type="text"
             maxlength="60"
-            class="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            class="mt-1 w-full rounded-md border border-line px-3 py-2 focus:border-chalk focus:outline-none"
             placeholder="Anoniem"
           />
         </div>
-        <button
-          type="button"
-          class="w-full rounded bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800"
-          @click="onContinue"
-        >
-          Verder naar de stoot
-        </button>
+        <div class="action-bar">
+          <button
+            type="button"
+            class="w-full rounded-md bg-felt px-4 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-felt-dark"
+            @click="onContinue"
+          >
+            Verder naar de stoot →
+          </button>
+        </div>
       </aside>
 
       <!-- Step 2: movements -->
-      <aside v-else class="space-y-4">
+      <aside v-else class="space-y-4 rounded-lg border border-line bg-white p-4 shadow-sm md:self-start">
         <div>
-          <h2 class="text-sm font-medium">Bewegingen</h2>
-          <p v-if="editor.shot.value.movements.length === 0" class="mt-1 text-sm text-gray-500">Nog geen gespeelde bal gekozen.</p>
-          <ol v-else class="mt-1 space-y-1">
+          <h2 class="font-display text-lg font-bold tracking-wide uppercase">Bewegingen</h2>
+          <p v-if="editor.shot.value.movements.length === 0" class="mt-1 text-sm text-muted">
+            Nog geen gespeelde bal gekozen. Tik op de tafel op de bal die je speelt.
+          </p>
+          <ol v-else class="mt-2 space-y-1.5">
             <li
               v-for="m in editor.shot.value.movements"
               :key="m.ballId"
-              class="flex items-center gap-2 rounded border px-2 py-1 text-sm"
-              :class="m.ballId === editor.state.currentBallId ? 'border-sky-400 bg-sky-50' : 'border-gray-200'"
+              class="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors"
+              :class="m.ballId === editor.state.currentBallId ? 'border-chalk bg-chalk-tint' : 'border-line'"
             >
-              <span class="w-5 font-semibold">{{ m.order }}</span>
-              <button type="button" class="font-medium underline-offset-2 hover:underline" @click="editor.startMovement(m.ballId)">
-                {{ ballLabel(m.ballId) }}
+              <span class="w-4 text-center font-display text-base font-bold text-muted">{{ m.order }}</span>
+              <button
+                type="button"
+                class="inline-flex min-w-0 items-center gap-2 rounded text-left font-semibold hover:text-felt"
+                :title="`${ballName(m)} bewerken`"
+                @click="editor.startMovement(m.ballId)"
+              >
+                <span
+                  class="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-xs font-bold"
+                  :class="movementBall(m)?.color === 'red' ? 'border-red-900 bg-ball-red text-white' : 'border-stone-400 bg-ball-white text-rail'"
+                  aria-hidden="true"
+                  >{{ movementBall(m)?.number }}</span
+                >
+                <span class="min-w-0">
+                  <span class="block truncate">{{ ballName(m) }}</span>
+                  <span class="block text-xs font-normal text-muted">
+                    {{ m.path.length - 1 }} {{ m.path.length - 1 === 1 ? 'punt' : 'punten' }}{{ m.result === 'scored' ? ' · gescoord' : ''
+                    }}{{ m.ballId === editor.state.playedBallId ? ' · gespeeld' : '' }}
+                  </span>
+                </span>
               </button>
-              <span class="text-xs text-gray-500">
-                {{ m.path.length - 1 }} {{ m.path.length - 1 === 1 ? 'punt' : 'punten' }}{{ m.result === 'scored' ? ' · gescoord' : '' }}
-                {{ m.ballId === editor.state.playedBallId ? ' · gespeeld' : '' }}
-              </span>
-              <span class="ml-auto flex gap-1">
-                <button type="button" class="rounded px-1 text-gray-600 hover:bg-gray-100 disabled:opacity-30" :disabled="m.order <= 2" title="Vroeger" @click="editor.moveMovement(m.ballId, 'up')">↑</button>
-                <button type="button" class="rounded px-1 text-gray-600 hover:bg-gray-100 disabled:opacity-30" :disabled="m.order === 1 || m.order === editor.shot.value.movements.length" title="Later" @click="editor.moveMovement(m.ballId, 'down')">↓</button>
-                <button type="button" class="rounded px-1 text-red-700 hover:bg-red-50" :title="m.ballId === editor.state.playedBallId ? 'Pad wissen' : 'Beweging verwijderen'" @click="editor.removeMovement(m.ballId)">✕</button>
+              <span class="ml-auto flex shrink-0">
+                <button
+                  type="button"
+                  class="grid h-8 w-8 place-items-center rounded text-muted hover:bg-paper hover:text-rail disabled:opacity-30"
+                  :disabled="m.order <= 2"
+                  title="Vroeger"
+                  aria-label="Vroeger"
+                  @click="editor.moveMovement(m.ballId, 'up')"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  class="grid h-8 w-8 place-items-center rounded text-muted hover:bg-paper hover:text-rail disabled:opacity-30"
+                  :disabled="m.order === 1 || m.order === editor.shot.value.movements.length"
+                  title="Later"
+                  aria-label="Later"
+                  @click="editor.moveMovement(m.ballId, 'down')"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  class="grid h-8 w-8 place-items-center rounded text-red-700 hover:bg-red-50"
+                  :title="m.ballId === editor.state.playedBallId ? 'Pad wissen' : 'Beweging verwijderen'"
+                  :aria-label="m.ballId === editor.state.playedBallId ? 'Pad wissen' : 'Beweging verwijderen'"
+                  @click="editor.removeMovement(m.ballId)"
+                >
+                  ✕
+                </button>
               </span>
             </li>
           </ol>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <button
             type="button"
-            class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40"
+            class="rounded-md border border-line px-3 py-2 text-sm font-semibold hover:bg-paper disabled:opacity-40"
             :disabled="!editor.currentMovement.value || editor.currentMovement.value.path.length < 2"
             @click="editor.undoPoint()"
           >
@@ -313,7 +409,7 @@ function onSave() {
           </button>
           <button
             type="button"
-            class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40"
+            class="rounded-md border border-line px-3 py-2 text-sm font-semibold hover:bg-paper disabled:opacity-40"
             :disabled="!editor.state.currentBallId"
             @click="editor.finishMovement()"
           >
@@ -321,22 +417,28 @@ function onSave() {
           </button>
         </div>
 
-        <p v-for="e in editor.shotErrors.value" :key="e" class="text-sm text-gray-600">{{ e }}</p>
+        <ul v-if="editor.shotErrors.value.length" class="space-y-1 text-sm text-muted">
+          <li v-for="e in editor.shotErrors.value" :key="e">{{ e }}</li>
+        </ul>
 
-        <div class="flex gap-2">
-          <button type="button" class="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50" @click="editor.backToBefore()">
-            Terug naar de ballen
+        <div class="action-bar flex gap-2">
+          <button
+            type="button"
+            class="rounded-md border border-line bg-white px-3 py-2.5 text-sm font-semibold hover:bg-paper"
+            @click="editor.backToBefore()"
+          >
+            ← Ballen
           </button>
           <button
             type="button"
-            class="flex-1 rounded bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+            class="flex-1 rounded-md bg-felt px-4 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-felt-dark disabled:opacity-50"
             :disabled="!editor.canSave.value || saving"
             @click="onSave"
           >
-            {{ saving ? 'Bezig…' : 'Bewaren' }}
+            {{ saving ? 'Bezig met bewaren…' : 'Bewaren' }}
           </button>
         </div>
-        <p v-if="saveError" class="text-sm text-red-700">{{ saveError }}</p>
+        <p v-if="saveError" class="text-sm font-semibold text-red-700" role="alert">{{ saveError }}</p>
       </aside>
     </div>
 
@@ -353,5 +455,18 @@ function onSave() {
 <style scoped>
 .editor-table :deep(svg) {
   touch-action: none;
+}
+
+/* On phones the main action stays within thumb reach at the bottom of the screen. */
+@media (max-width: 767px) {
+  .action-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: rgb(255 255 255 / 0.96);
+    border-top: 1px solid var(--color-line);
+    box-shadow: 0 -4px 12px rgb(0 0 0 / 0.06);
+  }
 }
 </style>

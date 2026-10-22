@@ -92,6 +92,18 @@ describe('holes', () => {
     expect(holes[0]!.center.x).toBe(W / 2)
     expect(approx(mirrorY(holes[0]!.center), holes[1]!.center)).toBe(true)
   })
+
+  it('the left goal (landscape) is for red balls, the right goal for white balls', () => {
+    const byX = [...holes].sort((a, b) => toSvg(a.center, 'landscape').x - toSvg(b.center, 'landscape').x)
+    expect(byX.map((h) => h.scoreColor)).toEqual(['red', 'white'])
+  })
+
+  it('the coloured rim lies outside the hole, so it does not change what counts as scored', () => {
+    for (const hole of holes) {
+      expect(hole.rimWidth).toBeGreaterThan(0)
+      expect(isInHole({ x: hole.center.x, y: hole.center.y + hole.radius + hole.rimWidth / 2 })).toBe(false)
+    }
+  })
 })
 
 describe('lines', () => {

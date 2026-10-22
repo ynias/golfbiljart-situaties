@@ -83,8 +83,18 @@ const pointsAttr = (pts: { x: number; y: number }[]) => pts.map((p) => `${p.x},$
         <polyline v-for="line in lines" :key="line.id" :points="pointsAttr(line.points)" />
       </g>
 
-      <!-- Holes -->
-      <circle v-for="hole in holes" :key="hole.id" :cx="hole.center.x" :cy="hole.center.y" :r="hole.radius" :fill="colors.hole" />
+      <!-- Holes, with a rim in the colour of the balls that are scored there -->
+      <g v-for="hole in holes" :key="hole.id" class="table-hole">
+        <circle
+          :cx="hole.center.x"
+          :cy="hole.center.y"
+          :r="hole.radius + hole.rimWidth / 2"
+          fill="none"
+          :stroke="hole.scoreColor === 'red' ? colors.rimRed : colors.rimWhite"
+          :stroke-width="hole.rimWidth"
+        />
+        <circle :cx="hole.center.x" :cy="hole.center.y" :r="hole.radius" :fill="colors.hole" />
+      </g>
 
       <!-- Pins -->
       <g class="table-pins">
