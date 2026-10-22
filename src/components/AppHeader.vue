@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAdmin } from '../composables/useAdmin'
 
 const route = useRoute()
+const admin = useAdmin()
 const onEditor = computed(() => route.name === 'new-situation' || route.name === 'situation-edit')
 
 const links = [
@@ -36,6 +38,15 @@ const links = [
         >
           <span class="sm:hidden">{{ link.short }}</span>
           <span class="hidden sm:inline">{{ link.label }}</span>
+        </RouterLink>
+        <RouterLink
+          v-if="admin.isAdmin.value"
+          to="/admin"
+          class="rounded px-2 py-1.5 font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
+          :class="{ 'bg-white/15 text-white': route.name === 'admin' }"
+          :aria-current="route.name === 'admin' ? 'page' : undefined"
+        >
+          Beheer
         </RouterLink>
         <RouterLink
           v-if="!onEditor"

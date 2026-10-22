@@ -145,20 +145,20 @@ const ballById = (id: string) => props.before.find((b) => b.id === id)
     </BilliardTable>
 
     <div class="mt-2 flex flex-wrap items-center gap-2">
-      <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800" :aria-label="playing ? 'Pauze' : 'Afspelen'" @click="togglePlay">
+      <button type="button" class="rounded-md bg-felt px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-felt-dark" :aria-label="playing ? 'Pauze' : 'Afspelen'" @click="togglePlay">
         {{ playing ? '❚❚ Pauze' : '▶ Afspelen' }}
       </button>
-      <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="restart">↺ Herstart</button>
-      <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" :disabled="playing" @click="step">
+      <button type="button" class="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold hover:bg-paper" @click="restart">↺ Herstart</button>
+      <button type="button" class="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold hover:bg-paper" :disabled="playing" @click="step">
         Stap per stap ⏭
       </button>
-      <div class="ml-auto inline-flex rounded border border-gray-300 bg-gray-50 p-0.5" role="radiogroup" aria-label="Snelheid">
+      <div class="ml-auto inline-flex rounded-md border border-line bg-white p-0.5 shadow-sm" role="radiogroup" aria-label="Snelheid">
         <button
           v-for="s in SPEEDS"
           :key="s"
           type="button"
           class="rounded px-2 py-1 text-xs"
-          :class="speed === s ? 'bg-emerald-700 text-white' : 'text-gray-700'"
+          :class="speed === s ? 'bg-felt text-white' : 'text-muted hover:text-felt'"
           :aria-pressed="speed === s"
           @click="setSpeed(s)"
         >
@@ -166,8 +166,8 @@ const ballById = (id: string) => props.before.find((b) => b.id === id)
         </button>
       </div>
     </div>
-    <div class="mt-2 h-1.5 w-full overflow-hidden rounded bg-gray-200" aria-hidden="true">
-      <div class="h-full bg-emerald-700 transition-[width] duration-75" :style="{ width: `${progress * 100}%` }" />
+    <div class="mt-2 h-1.5 w-full overflow-hidden rounded bg-line" aria-hidden="true">
+      <div class="h-full bg-felt transition-[width] duration-75" :style="{ width: `${progress * 100}%` }" />
     </div>
   </div>
 </template>

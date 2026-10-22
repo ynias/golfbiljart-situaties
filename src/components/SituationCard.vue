@@ -43,7 +43,26 @@ const summary = computed(() => summarize(props.situation.data.before, props.situ
         <li>{{ summary.movements }} {{ summary.movements === 1 ? 'beweging' : 'bewegingen' }}</li>
         <li v-if="summary.scored" class="font-semibold text-felt">{{ summary.scored }} gescoord</li>
       </ul>
-      <p class="mt-auto text-xs text-muted">{{ situation.authorName || 'Anoniem' }} · {{ formatDate(situation.createdAt) }}</p>
+      <div class="mt-auto flex items-center gap-3 text-xs text-muted">
+        <p class="min-w-0 truncate">{{ situation.authorName || 'Anoniem' }} · {{ formatDate(situation.createdAt) }}</p>
+        <p class="ml-auto inline-flex shrink-0 items-center gap-1" :aria-label="`${situation.likeCount} likes`">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" aria-hidden="true">
+            <path
+              d="M10 17.5s-6.5-4.1-6.5-8.6A3.6 3.6 0 0 1 10 6.6a3.6 3.6 0 0 1 6.5 2.3c0 4.5-6.5 8.6-6.5 8.6Z"
+              :fill="situation.likeCount ? 'var(--color-ball-red)' : 'none'"
+              :stroke="situation.likeCount ? 'var(--color-ball-red)' : 'currentColor'"
+              stroke-width="1.8"
+            />
+          </svg>
+          {{ situation.likeCount }}
+        </p>
+        <p class="inline-flex shrink-0 items-center gap-1" :aria-label="`${situation.commentCount} reacties`">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M3.5 4.5h13v9h-7l-4 3v-3h-2z" stroke-linejoin="round" />
+          </svg>
+          {{ situation.commentCount }}
+        </p>
+      </div>
     </div>
   </RouterLink>
 </template>

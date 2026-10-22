@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { isValidSlug } from './lib/slug'
+import AdminPage from './pages/AdminPage.vue'
 import EditSituationPage from './pages/EditSituationPage.vue'
 import HomePage from './pages/HomePage.vue'
 import MinePage from './pages/MinePage.vue'
@@ -26,6 +27,7 @@ export const router = createRouter({
       component: EditSituationPage,
       beforeEnter: (to) => (isValidSlug(String(to.params.slug)) ? true : { name: 'not-found', params: { pathMatch: to.path.slice(1).split('/') } }),
     },
+    { path: '/admin', name: 'admin', component: AdminPage },
     { path: '/tafel', name: 'table-preview', component: TablePreviewPage },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundPage },
   ],

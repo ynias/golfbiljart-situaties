@@ -16,11 +16,11 @@ Web app to draw, save and share golf billiards (golfbiljart) situations: a befor
 ```
 src/
   table/        geometry.ts (table in mm, origin top-left of playing surface, portrait canonical), themes.ts
-  domain/       types.ts, situation.ts (+ tests), paths.ts (+ tests)
-  components/   BilliardTable.vue, BallToken.vue, ShotPath.vue, ShotPlayer.vue, BallTray.vue, AppHeader.vue, GoalLegend.vue
-  composables/  useSituationEditor.ts, useEditTokens.ts
-  pages/        HomePage.vue, NewSituationPage.vue, SituationPage.vue, EditSituationPage.vue, MinePage.vue, TablePreviewPage.vue
-  lib/          supabase.ts, share.ts, slug.ts
+  domain/       types.ts, situation.ts (+ tests), paths.ts (+ tests), comment.ts (+ tests)
+  components/   BilliardTable.vue, BallToken.vue, ShotPath.vue, ShotPlayer.vue, BallTray.vue, AppHeader.vue, GoalLegend.vue, LikeButton.vue, CommentsSection.vue
+  composables/  useSituationEditor.ts, useEditTokens.ts, useAdmin.ts
+  pages/        HomePage.vue, NewSituationPage.vue, SituationPage.vue, EditSituationPage.vue, MinePage.vue, AdminPage.vue, TablePreviewPage.vue
+  lib/          supabase.ts, share.ts, slug.ts, situations.ts, likes.ts, liker.ts (+ tests), comments.ts
   router.ts
 supabase/       migrations/
 docs/           reference/ (table reference images), table-notes.md
@@ -52,3 +52,9 @@ scripts/        render-table.ts
 - [x] Phase 4 — Playback (ShotPlayer.vue)
 - [ ] Phase 5 — Save and share (Supabase schema, viewer, gallery, `/mijn`)
 - [ ] Phase 6 — Deploy and polish (OG tags, favicon, README, TEST_ cleanup)
+
+## Admin, likes and comments
+
+- Admins are Supabase Auth users listed in `public.admins` (add with `insert into public.admins select id from auth.users where email = '…'`). Login at `/admin`. Public sign-ups are disabled in Supabase.
+- Likes: one per device (random uuid in localStorage, `lib/liker.ts`); counters live on `situations.like_count` / `comment_count`.
+- All browser writes go through security definer functions; admin functions check `is_admin()` and are not executable by `anon`.

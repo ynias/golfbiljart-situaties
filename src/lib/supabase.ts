@@ -9,5 +9,6 @@ if (!url || !key) {
 }
 
 export const supabase = createClient<Database>(url, key, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  // Sessions are only used by admins (/admin); visitors stay anonymous.
+  auth: { persistSession: true, autoRefreshToken: true },
 })

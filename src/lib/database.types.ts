@@ -14,39 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      situation_comments: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          situation_id: string
+        }
+        Insert: {
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          situation_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          situation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "situation_comments_situation_id_fkey"
+            columns: ["situation_id"]
+            isOneToOne: false
+            referencedRelation: "situations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "situation_comments_situation_id_fkey"
+            columns: ["situation_id"]
+            isOneToOne: false
+            referencedRelation: "situations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      situation_likes: {
+        Row: {
+          created_at: string
+          liker_id: string
+          situation_id: string
+        }
+        Insert: {
+          created_at?: string
+          liker_id: string
+          situation_id: string
+        }
+        Update: {
+          created_at?: string
+          liker_id?: string
+          situation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "situation_likes_situation_id_fkey"
+            columns: ["situation_id"]
+            isOneToOne: false
+            referencedRelation: "situations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "situation_likes_situation_id_fkey"
+            columns: ["situation_id"]
+            isOneToOne: false
+            referencedRelation: "situations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       situations: {
         Row: {
           author_name: string | null
+          comment_count: number
           created_at: string
           data: Json
           description: string | null
           edit_token: string
           id: string
           is_public: boolean
+          like_count: number
           slug: string
           title: string
           updated_at: string
         }
         Insert: {
           author_name?: string | null
+          comment_count?: number
           created_at?: string
           data: Json
           description?: string | null
           edit_token: string
           id?: string
           is_public?: boolean
+          like_count?: number
           slug: string
           title: string
           updated_at?: string
         }
         Update: {
           author_name?: string | null
+          comment_count?: number
           created_at?: string
           data?: Json
           description?: string | null
           edit_token?: string
           id?: string
           is_public?: boolean
+          like_count?: number
           slug?: string
           title?: string
           updated_at?: string
@@ -58,33 +151,39 @@ export type Database = {
       situations_public: {
         Row: {
           author_name: string | null
+          comment_count: number | null
           created_at: string | null
           data: Json | null
           description: string | null
           id: string | null
           is_public: boolean | null
+          like_count: number | null
           slug: string | null
           title: string | null
           updated_at: string | null
         }
         Insert: {
           author_name?: string | null
+          comment_count?: number | null
           created_at?: string | null
           data?: Json | null
           description?: string | null
           id?: string | null
           is_public?: boolean | null
+          like_count?: number | null
           slug?: string | null
           title?: string | null
           updated_at?: string | null
         }
         Update: {
           author_name?: string | null
+          comment_count?: number | null
           created_at?: string | null
           data?: Json | null
           description?: string | null
           id?: string | null
           is_public?: boolean | null
+          like_count?: number | null
           slug?: string | null
           title?: string | null
           updated_at?: string | null
@@ -93,12 +192,52 @@ export type Database = {
       }
     }
     Functions: {
+      add_comment: {
+        Args: { p_author_name: string; p_body: string; p_slug: string }
+        Returns: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          situation_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "situation_comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_delete_comment: { Args: { p_id: string }; Returns: boolean }
+      admin_delete_situation: { Args: { p_slug: string }; Returns: boolean }
+      admin_update_situation: {
+        Args: {
+          p_author_name: string
+          p_data: Json
+          p_description: string
+          p_slug: string
+          p_title: string
+        }
+        Returns: boolean
+      }
       delete_situation: {
         Args: { p_slug: string; p_token: string }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       is_valid_point: { Args: { p: Json }; Returns: boolean }
       is_valid_situation_data: { Args: { d: Json }; Returns: boolean }
+      liked_slugs: {
+        Args: { p_liker: string; p_slugs: string[] }
+        Returns: string[]
+      }
+      toggle_like: {
+        Args: { p_liker: string; p_slug: string }
+        Returns: {
+          like_count: number
+          liked: boolean
+        }[]
+      }
       update_situation: {
         Args: {
           p_author_name: string

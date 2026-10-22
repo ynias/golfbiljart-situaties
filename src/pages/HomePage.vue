@@ -2,10 +2,11 @@
 import { onMounted, ref, watch } from 'vue'
 import SituationCard from '../components/SituationCard.vue'
 import type { Situation } from '../domain/types'
-import { listSituations } from '../lib/situations'
+import { listSituations, type SituationSort } from '../lib/situations'
 
 const situations = ref<Situation[]>([])
 const search = ref('')
+const sort = ref<SituationSort>('new')
 const loading = ref(true)
 const error = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -14,7 +15,7 @@ async function load() {
   loading.value = true
   error.value = false
   try {
-    situations.value = await listSituations({ search: search.value })
+    situations.value = await listSituations({ search: search.value, sort: sort.value })
   } catch (e) {
     error.value = true
     console.error(e)
@@ -24,6 +25,7 @@ async function load() {
 }
 
 onMounted(load)
+watch(sort, load)
 watch(search, () => {
   if (timer) clearTimeout(timer)
   timer = setTimeout(load, 300)
@@ -52,9 +54,25 @@ watch(search, () => {
       </label>
     </div>
 
-    <p v-if="!loading && !error && situations.length > 0" class="mt-6 mb-3 text-sm text-muted" aria-live="polite">
-      {{ situations.length }} {{ situations.length === 1 ? 'situatie' : 'situaties' }}{{ search ? ` voor “${search}”` : '' }}
-    </p>
+    <div v-if="!loading && !error && situations.length > 0" class="mt-6 mb-3 flex flex-wrap items-center gap-3">
+      <p class="text-sm text-muted" aria-live="polite">
+        {{ situations.length }} {{ situations.length === 1 ? 'situatie' : 'situaties' }}{{ search ? ` voor “${search}”` : '' }}
+      </p>
+      <div class="ml-auto inline-flex rounded-md border border-line bg-white p-0.5 text-sm shadow-sm" role="radiogroup" aria-label="Sorteren">
+        <button
+          v-for="o in [{ id: 'new', label: 'Nieuwste' }, { id: 'popular', label: 'Meeste likes' }] as const"
+          :key="o.id"
+          type="button"
+          role="radio"
+          :aria-checked="sort === o.id"
+          class="rounded px-3 py-1 font-semibold transition-colors"
+          :class="sort === o.id ? 'bg-felt text-white' : 'text-muted hover:text-felt'"
+          @click="sort = o.id"
+        >
+          {{ o.label }}
+        </button>
+      </div>
+    </div>
 
     <!-- Loading: placeholder cards in the shape of the real ones -->
     <div v-if="loading" class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Situaties laden">

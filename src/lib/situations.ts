@@ -15,6 +15,7 @@ type Row = Tables<'situations_public'>
 
 function toSituation(row: Row): Situation {
   return {
+    id: row.id ?? '',
     slug: row.slug ?? '',
     title: row.title ?? '',
     description: row.description ?? undefined,
@@ -23,6 +24,8 @@ function toSituation(row: Row): Situation {
     data: row.data as unknown as SituationData,
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
+    likeCount: row.like_count ?? 0,
+    commentCount: row.comment_count ?? 0,
   }
 }
 
@@ -58,12 +61,14 @@ export async function getSituation(slug: string): Promise<Situation | null> {
   return data ? toSituation(data) : null
 }
 
-export async function listSituations(options: { search?: string; limit?: number } = {}): Promise<Situation[]> {
-  let query = supabase
-    .from('situations_public')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(options.limit ?? 30)
+export type SituationSort = 'new' | 'popular'
+
+export async function listSituations(
+  options: { search?: string; limit?: number; sort?: SituationSort } = {},
+): Promise<Situation[]> {
+  let query = supabase.from('situations_public').select('*')
+  if (options.sort === 'popular') query = query.order('like_count', { ascending: false })
+  query = query.order('created_at', { ascending: false }).limit(options.limit ?? 30)
   const search = options.search?.trim()
   if (search) query = query.ilike('title', `%${search.replace(/[%_]/g, '')}%`)
   const { data, error } = await query
@@ -99,6 +104,26 @@ export async function updateSituation(slug: string, editToken: string, input: Si
 /** Deletes a situation with its edit token. Returns false when slug/token do not match. */
 export async function deleteSituation(slug: string, editToken: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('delete_situation', { p_slug: slug, p_token: editToken })
+  if (error) throw error
+  return data === true
+}
+
+/** Admin: updates any situation. Throws when the signed-in user is not an admin. */
+export async function adminUpdateSituation(slug: string, input: SituationInput): Promise<boolean> {
+  const { data, error } = await supabase.rpc('admin_update_situation', {
+    p_slug: slug,
+    p_title: input.title.trim(),
+    p_description: clean(input.description) as string,
+    p_author_name: clean(input.authorName) as string,
+    p_data: input.data as never,
+  })
+  if (error) throw error
+  return data === true
+}
+
+/** Admin: deletes any situation (with its likes and comments). */
+export async function adminDeleteSituation(slug: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('admin_delete_situation', { p_slug: slug })
   if (error) throw error
   return data === true
 }
