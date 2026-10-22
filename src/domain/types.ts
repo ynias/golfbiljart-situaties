@@ -43,6 +43,7 @@ export interface SituationData {
 }
 
 export interface Situation {
+  id: string
   slug: string
   title: string
   description?: string
@@ -51,6 +52,16 @@ export interface Situation {
   data: SituationData
   createdAt: string
   updatedAt: string
+  likeCount: number
+  commentCount: number
+}
+
+export interface SituationComment {
+  id: string
+  situationId: string
+  authorName: string
+  body: string
+  createdAt: string
 }
 
 export const MAX_BALLS_PER_COLOR = 5
